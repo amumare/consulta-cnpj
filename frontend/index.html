@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,7 +17,7 @@
             --error-bg: #fef2f2;
             --error-text: #dc2626;
             --error-border: #fecaca;
-            
+
             --status-ativa-bg: #dcfce7;
             --status-ativa-text: #15803d;
             --status-baixada-bg: #fee2e2;
@@ -156,8 +157,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .result-card {
@@ -200,7 +206,8 @@
             color: var(--status-ativa-text);
         }
 
-        .status-baixada, .status-inativa {
+        .status-baixada,
+        .status-inativa {
             background-color: var(--status-baixada-bg);
             color: var(--status-baixada-text);
         }
@@ -221,6 +228,7 @@
             .card-body {
                 grid-template-columns: repeat(2, 1fr);
             }
+
             .full-width {
                 grid-column: span 2;
             }
@@ -248,6 +256,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -259,14 +268,8 @@
             <div class="search-card">
                 <form id="cnpj-form">
                     <div class="form-group">
-                        <input 
-                            type="text" 
-                            id="cnpj-input" 
-                            placeholder="Digite o CNPJ (ex: 12.345.678/0001-90)" 
-                            autocomplete="off"
-                            maxlength="18"
-                            required
-                        >
+                        <input type="text" id="cnpj-input" placeholder="Digite o CNPJ (ex: 12.345.678/0001-90)"
+                            autocomplete="off" maxlength="18" required>
                         <button type="submit" id="btn-submit">
                             <span id="btn-text">Consultar CNPJ</span>
                         </button>
@@ -296,6 +299,12 @@
                         <span class="info-label">Data de Abertura</span>
                         <span id="res-data-abertura" class="info-value">-</span>
                     </div>
+                    <div class="info-group">
+                        <span class="info-label">Tempo de Atividade</span>
+                        <span id="res-tempo-atividade" class="info-value">-</span>
+                    </div>
+
+
 
                     <div class="info-group full-width">
                         <span class="info-label">Razão Social</span>
@@ -380,7 +389,7 @@
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const rawValue = cnpjInput.value;
                 const cleanDigits = rawValue.replace(/\D/g, '');
 
@@ -447,6 +456,7 @@
                 document.getElementById('res-razao-social').textContent = data.razao_social;
                 document.getElementById('res-nome-fantasia').textContent = data.nome_fantasia;
                 document.getElementById('res-data-abertura').textContent = data.data_abertura;
+                document.getElementById('res-tempo-atividade').textContent = data.tempo_atividade;
                 document.getElementById('res-porte').textContent = data.porte;
                 document.getElementById('res-ie').textContent = data.inscricao_estadual;
                 document.getElementById('res-natureza-juridica').textContent = data.natureza_juridica;
@@ -460,10 +470,10 @@
                 const statusBadge = document.getElementById('res-situacao');
                 const situacaoText = (data.situacao || 'NÃO INFORMADO').toUpperCase();
                 statusBadge.textContent = situacaoText;
-                
+
                 // Limpar classes de status anteriores
                 statusBadge.className = 'status-badge';
-                
+
                 if (situacaoText.includes('ATIVA')) {
                     statusBadge.classList.add('status-ativa');
                 } else if (situacaoText.includes('BAIXADA') || situacaoText.includes('INATIVA')) {
@@ -477,4 +487,5 @@
         });
     </script>
 </body>
+
 </html>

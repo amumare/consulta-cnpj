@@ -1,11 +1,45 @@
+from datetime import datetime
 import httpx
 from fastapi import HTTPException
 from backend.utils.cnpj_validator import clean_cnpj
 
 BRASIL_API_URL = "https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
 
+def format_date_and_calculate_age(date_str: str) -> tuple[str, str]:
+    """
+    Converte a data de YYYY-MM-DD para DD/MM/YYYY e calcula o tempo de atividade.
+    """
+    if not date_str or date_str == "Não informado":
+        return "Não informado", "Não informado"
+    
+    try:
+        # A BrasilAPI retorna a data no formato YYYY-MM-DD
+        opening_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        formatted_date = opening_date.strftime("%d/%m/%Y")
+        
+        # Cálculo do tempo de atividade (anos e meses)
+        today = datetime.now().date()
+        years = today.year - opening_date.year
+        months = today.month - opening_date.month
+        
+        if months < 0:
+            years -= 1
+            months += 12
+            
+        if years > 0 and months > 0:
+            age_str = f"{years} anos e {months} meses"
+        elif years > 0:
+            age_str = f"{years} anos"
+        elif months > 0:
+            age_str = f"{months} meses"
+        else:
+            age_str = "Menos de 1 mês"
+            
+        return formatted_date, age_str
+    except ValueError:
+        return date_str, "Não informado"
+
 async def fetch_cnpj_data(cnpj: str) -> dict:
-    # Garante que o valor utilizado na URL e no retorno seja apenas numérico (ex: 49574772000126)
     clean_num = clean_cnpj(cnpj)
     
     async with httpx.AsyncClient() as client:
@@ -21,13 +55,17 @@ async def fetch_cnpj_data(cnpj: str) -> dict:
                 
             data = response.json()
             
+            # Formatação de data e tempo de atividade
+            raw_date = data.get("data_inicio_atividade")
+            formatted_date, tempo_atividade = format_date_and_calculate_age(raw_date)
+            
             return {
-                # AQUI: Retorna sempre o CNPJ apenas com os 14 dígitos numéricos
                 "cnpj": clean_num,
                 "razao_social": data.get("razao_social") or "Não informado",
                 "nome_fantasia": data.get("nome_fantasia") or "Não informado",
                 "situacao": data.get("descricao_situacao_cadastral") or "Não informado",
-                "data_abertura": data.get("data_inicio_atividade") or "Não informado",
+                "data_abertura": formatted_date,
+                "tempo_atividade": tempo_atividade,
                 "inscricao_estadual": "Não informado",
                 "natureza_juridica": data.get("natureza_juridica") or "Não informado",
                 "porte": data.get("porte") or "Não informado",
