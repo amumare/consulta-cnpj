@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de CNPJ</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --error-bg: #fef2f2;
+            --error-text: #dc2626;
+            --error-border: #fecaca;
+            
+            --status-ativa-bg: #dcfce7;
+            --status-ativa-text: #15803d;
+            --status-baixada-bg: #fee2e2;
+            --status-baixada-text: #b91c1c;
+            --status-suspensa-bg: #fef3c7;
+            --status-suspensa-text: #b45309;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .search-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 540px) {
+            .form-group {
+                flex-direction: row;
+            }
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 160px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+            border: 1px solid var(--error-border);
+        }
+
+        .loading-container {
+            display: none;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-card {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-header h2 {
+            font-size: 1.25rem;
+            color: var(--text-main);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+        }
+
+        .status-ativa {
+            background-color: var(--status-ativa-bg);
+            color: var(--status-ativa-text);
+        }
+
+        .status-baixada, .status-inativa {
+            background-color: var(--status-baixada-bg);
+            color: var(--status-baixada-text);
+        }
+
+        .status-suspensa {
+            background-color: var(--status-suspensa-bg);
+            color: var(--status-suspensa-text);
+        }
+
+        .card-body {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .card-body {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            font-weight: 500;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Consulta de CNPJ</h1>
+            <p>Consulte informações cadastrais de uma empresa através do CNPJ.</p>
+        </header>
+
+        <main>
+            <div class="search-card">
+                <form id="cnpj-form">
+                    <div class="form-group">
+                        <input 
+                            type="text" 
+                            id="cnpj-input" 
+                            placeholder="Digite o CNPJ (ex: 12.345.678/0001-90)" 
+                            autocomplete="off"
+                            maxlength="18"
+                            required
+                        >
+                        <button type="submit" id="btn-submit">
+                            <span id="btn-text">Consultar CNPJ</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="alert-error" class="alert alert-error"></div>
+
+            <div id="loading" class="loading-container">
+                <div class="spinner"></div>
+                <p>Consultando CNPJ...</p>
+            </div>
+
+            <section id="result-card" class="result-card">
+                <div class="card-header">
+                    <h2>Dados da Empresa</h2>
+                    <span id="res-situacao" class="status-badge">SITUAÇÃO</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-group">
+                        <span class="info-label">CNPJ</span>
+                        <span id="res-cnpj" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">Data de Abertura</span>
+                        <span id="res-data-abertura" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group full-width">
+                        <span class="info-label">Razão Social</span>
+                        <span id="res-razao-social" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group full-width">
+                        <span class="info-label">Nome Fantasia</span>
+                        <span id="res-nome-fantasia" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">Porte da Empresa</span>
+                        <span id="res-porte" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">Inscrição Estadual</span>
+                        <span id="res-ie" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group full-width">
+                        <span class="info-label">Natureza Jurídica</span>
+                        <span id="res-natureza-juridica" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group full-width">
+                        <span class="info-label">Endereço</span>
+                        <span id="res-endereco" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">Município / Estado</span>
+                        <span id="res-municipio-uf" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">CEP</span>
+                        <span id="res-cep" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">Telefone</span>
+                        <span id="res-telefone" class="info-value">-</span>
+                    </div>
+
+                    <div class="info-group">
+                        <span class="info-label">E-mail</span>
+                        <span id="res-email" class="info-value">-</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('cnpj-form');
+            const cnpjInput = document.getElementById('cnpj-input');
+            const btnSubmit = document.getElementById('btn-submit');
+            const btnText = document.getElementById('btn-text');
+            const alertError = document.getElementById('alert-error');
+            const loading = document.getElementById('loading');
+            const resultCard = document.getElementById('result-card');
+
+            // Formatação automática do input enquanto o usuário digita
+            cnpjInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 14) value = value.slice(0, 14);
+
+                if (value.length > 12) {
+                    value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+                } else if (value.length > 8) {
+                    value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})$/, "$1.$2.$3/$4");
+                } else if (value.length > 5) {
+                    value = value.replace(/^(\d{2})(\d{3})(\d{0,3})$/, "$1.$2.$3");
+                } else if (value.length > 2) {
+                    value = value.replace(/^(\d{2})(\d{0,3})$/, "$1.$2");
+                }
+                e.target.value = value;
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const rawValue = cnpjInput.value;
+                const cleanDigits = rawValue.replace(/\D/g, '');
+
+                // Validação prévia de frontend
+                if (!cleanDigits) {
+                    showError('Por favor, digite um CNPJ.');
+                    return;
+                }
+
+                if (cleanDigits.length !== 14) {
+                    showError('O CNPJ deve conter exatamente 14 dígitos numéricos.');
+                    return;
+                }
+
+                // Iniciar estado de carregamento na interface
+                hideError();
+                hideResult();
+                setLoading(true);
+
+                try {
+                    const response = await fetch(`/api/cnpj/${encodeURIComponent(cleanDigits)}`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'Ocorreu um erro ao consultar o CNPJ.');
+                    }
+
+                    renderData(data);
+                } catch (err) {
+                    showError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    btnSubmit.disabled = true;
+                    btnText.textContent = 'Consultando...';
+                    loading.style.display = 'block';
+                } else {
+                    btnSubmit.disabled = false;
+                    btnText.textContent = 'Consultar CNPJ';
+                    loading.style.display = 'none';
+                }
+            }
+
+            function showError(message) {
+                alertError.textContent = message;
+                alertError.style.display = 'block';
+            }
+
+            function hideError() {
+                alertError.style.display = 'none';
+                alertError.textContent = '';
+            }
+
+            function hideResult() {
+                resultCard.style.display = 'none';
+            }
+
+            function renderData(data) {
+                document.getElementById('res-cnpj').textContent = data.cnpj;
+                document.getElementById('res-razao-social').textContent = data.razao_social;
+                document.getElementById('res-nome-fantasia').textContent = data.nome_fantasia;
+                document.getElementById('res-data-abertura').textContent = data.data_abertura;
+                document.getElementById('res-porte').textContent = data.porte;
+                document.getElementById('res-ie').textContent = data.inscricao_estadual;
+                document.getElementById('res-natureza-juridica').textContent = data.natureza_juridica;
+                document.getElementById('res-endereco').textContent = data.endereco;
+                document.getElementById('res-municipio-uf').textContent = `${data.municipio} / ${data.estado}`;
+                document.getElementById('res-cep').textContent = data.cep;
+                document.getElementById('res-telefone').textContent = data.telefone;
+                document.getElementById('res-email').textContent = data.email;
+
+                // Estilização dinâmica do badge de situação
+                const statusBadge = document.getElementById('res-situacao');
+                const situacaoText = (data.situacao || 'NÃO INFORMADO').toUpperCase();
+                statusBadge.textContent = situacaoText;
+                
+                // Limpar classes de status anteriores
+                statusBadge.className = 'status-badge';
+                
+                if (situacaoText.includes('ATIVA')) {
+                    statusBadge.classList.add('status-ativa');
+                } else if (situacaoText.includes('BAIXADA') || situacaoText.includes('INATIVA')) {
+                    statusBadge.classList.add('status-baixada');
+                } else if (situacaoText.includes('SUSPENSA')) {
+                    statusBadge.classList.add('status-suspensa');
+                }
+
+                resultCard.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
