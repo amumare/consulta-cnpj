@@ -56,11 +56,9 @@ async def get_cnpj_info(raw_cnpj: str):
     return await fetch_cnpj_data(cleaned_cnpj)
 
 
-# Servir arquivos estáticos do frontend
-frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-if os.path.exists(frontend_path):
-    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+# Servir arquivos estáticos da raiz do projeto
+root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    @app.get("/", include_in_schema=False)
-    async def serve_index():
-        return FileResponse(os.path.join(frontend_path, "index.html"))
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    return FileResponse(os.path.join(root_path, "index.html"))
